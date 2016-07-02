@@ -24,6 +24,7 @@ class Edge
 public class GraphDraw extends JPanel
 {
 	private static int n;
+	private int maxDegree;
 	private static ArrayList<Edge> edges = new ArrayList();
 	private static Point points[];
 	private static int degrees[];
@@ -33,8 +34,9 @@ public class GraphDraw extends JPanel
 	private static int height = 600;
 	private Point centre = new Point(400,300);
 	private Point offCentre = new Point(0,0);
-	GraphDraw()
+	GraphDraw(int mD)
 	{
+		maxDegree = mD;
 		addMouseListener(new MouseAdapter() { 
 			public void mousePressed(MouseEvent me) { 
 				//System.out.println(me.getX()+" "+me.getY()); 
@@ -53,7 +55,7 @@ public class GraphDraw extends JPanel
 				int dy = e.getY() - my;
 				int o = findOval(mx,my);
 				//System.out.println(dx + " "+dy);
-				if(o >= 0)
+				if(o >= 0 && points[o].focus)
 				{
 					mx = mx+dx;
 					my = my+dy;
@@ -76,7 +78,7 @@ public class GraphDraw extends JPanel
 		y = centre.y - (int)((centre.y + offCentre.y - y)/scale);
 		for(int i=0;i<n;i++)
 		{
-			if ((points[i].x - x)*(points[i].x - x)+(points[i].y - y)*(points[i].y - y) <= 400)	return i;
+			if ((points[i].x - x)*(points[i].x - x)+(points[i].y - y)*(points[i].y - y) <= 100+50*(5-scale))	return i;
 		}
 		return -1;
 	}
@@ -111,8 +113,8 @@ public class GraphDraw extends JPanel
 		int r = 100;
 		for(int i=0;i<n;i++)
 		{
-			if(degrees[i] >= n/2)	r = 50;
-			else if(degrees[i] >= n/3)	r = 100;
+			if(degrees[i] >= maxDegree*4/5)	r = 50;
+			else if(degrees[i] >= maxDegree*3/5)	r = 100;
 			else	r = 150;
 			x = (int) (r * Math.cos(Math.toRadians(i*360/n)));
 			y = (int) (r * Math.sin(Math.toRadians(i*360/n)));	
@@ -120,21 +122,23 @@ public class GraphDraw extends JPanel
 			y =  centre.y - y;
 			g2d.setPaint(new Color(210,200,10));
 			diameter = 10;
-			if(degrees[i] >= n/3)	g2d.setPaint(new Color(20,20,210));
-			if(degrees[i] >= n/2)	g2d.setPaint(new Color(210,20,10));
+			if(degrees[i] >= maxDegree*3/5)	g2d.setPaint(new Color(20,20,210));
+			if(degrees[i] >= maxDegree*4/5)	g2d.setPaint(new Color(210,20,10));
 			if(points[i] == null)	points[i] = new Point(x,y);
 			else{
 				x = points[i].x ;
 				y = points[i].y;
 			}
-			if(points[i].focus)
-			{
-				g2d.setPaint(new Color(20,170,240));
-				diameter = 15;
-				g2d.drawString("Degree = "+degrees[i],x,y); 
-			}
 			x = (int)((x-centre.x)*scale) + centre.x+offCentre.x;
 			y = centre.y - (int)((centre.y-y)*scale)+offCentre.y;
+			if(points[i].focus)
+			{
+				g2d.setPaint(new Color(20,20,20));
+				diameter = 15;
+				g2d.setFont(new Font("TimesRoman", Font.BOLD, 15)); 				
+				g2d.drawString("Degree = "+degrees[i],x,y); 
+				g2d.setPaint(new Color(220,10,240));				
+			}
 			g2d.fillOval(x ,y , diameter,diameter);	
 		}
 		for(Edge ed : edges)
@@ -154,15 +158,18 @@ public class GraphDraw extends JPanel
 	public static void main(String args[])
 	{
 		fetch();
-		JPanel panel = new GraphDraw();
 		points = new Point[n];
 		degrees = new int[n];
+		int maxDeg = 0;
 		for(Edge ed : edges)
 		{
 			//System.out.println(ed.s+"-->"+ed.e);
 			degrees[ed.s]++;
 			degrees[ed.e]++;
+			if(degrees[ed.s] > maxDeg)	maxDeg = degrees[ed.s];
+			if(degrees[ed.e] > maxDeg)	maxDeg = degrees[ed.e];
 		}
+		JPanel panel = new GraphDraw(maxDeg);
 		JFrame f = new JFrame("Graph Visualiser");
 		f.setBounds(0, 0, 800,600);
 		f.add(panel);
