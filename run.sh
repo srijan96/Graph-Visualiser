@@ -1,4 +1,4 @@
 javac GraphGen.java
-javac GraphDraw.java
-java GraphGen 100 25 > edges.csv
-java GraphDraw 
+javac GraphDrawMod.java
+java GraphGen 60 7 > edges.csv
+java GraphDrawMod
