@@ -13,7 +13,8 @@ class Point
 	public int x;
 	public int y;
 	public boolean focus;
-	Point(int x,int y){	this.x = x;this.y = y;focus = false;	}
+	public int visible;
+	Point(int x,int y){	this.x = x;this.y = y;focus = false;visible = 2;	}
 }
 class Edge
 {
@@ -36,9 +37,11 @@ public class GraphDraw extends JPanel
 	private static int height = 600;
 	private Point centre = new Point(400,300);
 	private Point offCentre = new Point(0,0);
-	private static int numIcons = 7;
+	private static int numIcons = 10;
 	private static BufferedImage icons[] = new BufferedImage[numIcons];
 	private boolean enablePan,enableDrag;
+	private int showHidden;
+	private int focused;
 	GraphDraw(int mD)
 	{
 		for(int i=0;i<numIcons;i++)
@@ -50,6 +53,8 @@ public class GraphDraw extends JPanel
 		maxDegree = mD;
 		enablePan = false;
 		enableDrag = true;
+		showHidden = 0;
+		focused = -1;
 		addMouseListener(new MouseAdapter() { 
 			public void mousePressed(MouseEvent me) { 
 				if(me.getX() <= numIcons*30 && me.getY() <= 30)
@@ -62,12 +67,27 @@ public class GraphDraw extends JPanel
 					else if(action == 4){	enablePan = false;	enableDrag = true;	setCursor(new Cursor(Cursor.HAND_CURSOR));	}
 					else if(action == 5){	offCentre.x = 0;	offCentre.y = 0;	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}
 					else if(action == 6){	reset();	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}					
+					else if(action == 7){	if(focused >= 0)	points[focused].visible = showHidden;		}	
+					else if(action == 8){	if(focused >= 0)	points[focused].visible = 2;		}	
+					else if(action == 9)
+					{
+						for(int i=0;i<n;i++)
+						{
+							if(points[i].visible == showHidden)	points[i].visible = 1-showHidden;
+						}
+						showHidden = 1- showHidden;
+					}
+					focused = -1;
 				}
 				int o = findOval(me.getX(),me.getY());
 				mx = me.getX();
 				my = me.getY();
 				for(int i=0;i<n;i++)	points[i].focus = false;
-				if(o >= 0)	points[o].focus = true;
+				if(o >= 0)
+				{
+					points[o].focus = true;
+					focused = o;
+				}
 				repaint();
 			} 
 		});
@@ -173,26 +193,30 @@ public class GraphDraw extends JPanel
 			y = centre.y - (int)((centre.y-y)*scale)+offCentre.y;
 			if(points[i].focus)
 			{
-				g2d.setPaint(new Color(20,20,20));
-				diameter = 15;
-				g2d.setFont(new Font("TimesRoman", Font.BOLD, 15)); 				
-				g2d.drawString("Degree = "+degrees[i],x,y); 
-				g2d.setPaint(new Color(220,10,240));				
+				if(points[i].visible == 2)
+				{
+					g2d.setPaint(new Color(20,20,20));
+					diameter = 15;
+					g2d.setFont(new Font("TimesRoman", Font.BOLD, 15)); 				
+					g2d.drawString("Degree = "+degrees[i],x,y); 
+					g2d.setPaint(new Color(220,10,240));	
+				}
+				else if(points[i].visible == 1)	g2d.setPaint(new Color(220,210,240));		
 			}
-			g2d.fillOval(x ,y , diameter,diameter);	
+			if(points[i].visible != 0)	g2d.fillOval(x ,y , diameter,diameter);	
 		}
 		for(Edge ed : edges)
 		{
 			g2d.setPaint(new Color(10,200,150));
 			g2d.setStroke(new BasicStroke(ed.w));
 			if(points[ed.s].focus || points[ed.e].focus)	g2d.setStroke(new BasicStroke(ed.w*2));
-			if(points[ed.s].focus)			g2d.setPaint(new Color(255,0,0));
-			if(points[ed.e].focus)			g2d.setPaint(new Color(255,0,0));
+			if(points[ed.s].focus || points[ed.e].focus)			g2d.setPaint(new Color(255,0,0));
+			if(points[ed.s].visible == 1 || points[ed.e].visible == 1)			g2d.setPaint(new Color(220,210,240));
 			int x1 = (int)((points[ed.s].x-centre.x)*scale) + centre.x+offCentre.x;
 			int y1 = centre.y - (int)((centre.y-points[ed.s].y)*scale)+offCentre.y;
 			int x2 = (int)((points[ed.e].x-centre.x)*scale) + centre.x+offCentre.x;
 			int y2 = centre.y - (int)((centre.y-points[ed.e].y)*scale)+offCentre.y;
-			g2d.drawLine(x1,y1,x2,y2);
+			if(points[ed.s].visible != 0 && points[ed.e].visible != 0)	g2d.drawLine(x1,y1,x2,y2);
 		}
 	}
 	public static void main(String args[])
