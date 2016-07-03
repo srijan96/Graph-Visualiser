@@ -6,6 +6,8 @@ import javax.swing.*;
 import java.util.*;
 import java.io.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 class Point
 {
 	public int x;
@@ -34,16 +36,36 @@ public class GraphDraw extends JPanel
 	private static int height = 600;
 	private Point centre = new Point(400,300);
 	private Point offCentre = new Point(0,0);
+	private static int numIcons = 7;
+	private static BufferedImage icons[] = new BufferedImage[numIcons];
+	private boolean enablePan,enableDrag;
 	GraphDraw(int mD)
 	{
+		for(int i=0;i<numIcons;i++)
+		{
+			try{
+				icons[i] = ImageIO.read(new File("icons/"+i+".png"));
+			}catch(IOException e){}
+		}
 		maxDegree = mD;
+		enablePan = false;
+		enableDrag = true;
 		addMouseListener(new MouseAdapter() { 
 			public void mousePressed(MouseEvent me) { 
-				//System.out.println(me.getX()+" "+me.getY()); 
+				if(me.getX() <= numIcons*30 && me.getY() <= 30)
+				{
+					int action = (me.getX()-5)/30;
+					if(action == 0){	enablePan = true;	enableDrag = false;		setCursor(new Cursor(Cursor.MOVE_CURSOR));	}
+					else if(action == 1){	if(scale < 5)	scale += 0.25; 	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}
+					else if(action == 2){	scale = 1; 	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}					
+					else if(action == 3){	if(scale > 0.25)	scale -= 0.25; 	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}
+					else if(action == 4){	enablePan = false;	enableDrag = true;	setCursor(new Cursor(Cursor.HAND_CURSOR));	}
+					else if(action == 5){	offCentre.x = 0;	offCentre.y = 0;	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}
+					else if(action == 6){	reset();	setCursor(new Cursor(Cursor.DEFAULT_CURSOR));	}					
+				}
 				int o = findOval(me.getX(),me.getY());
 				mx = me.getX();
 				my = me.getY();
-				//System.out.println(o); 
 				for(int i=0;i<n;i++)	points[i].focus = false;
 				if(o >= 0)	points[o].focus = true;
 				repaint();
@@ -55,19 +77,18 @@ public class GraphDraw extends JPanel
 				int dy = e.getY() - my;
 				int o = findOval(mx,my);
 				//System.out.println(dx + " "+dy);
-				if(o >= 0 && points[o].focus)
+				if(o >= 0 && enableDrag)
 				{
 					mx = mx+dx;
 					my = my+dy;
 					points[o].x += dx;
 					points[o].y += dy;
 				}	
-				else if(e.getX() <= width*2/3)
+				else if(enablePan)
 				{
-					offCentre.x += dx/10;
-					offCentre.y += dy/10;
-				}
-				else if(scale < 5 && dy < -5|| scale > 0.5 && dy > 5)	scale -= dy*0.0001;			
+					offCentre.x += dx/25;
+					offCentre.y += dy/25;
+				}			
 				repaint();
 			}
 		});
@@ -103,11 +124,30 @@ public class GraphDraw extends JPanel
 //		e.printStackTrace();
 		}
 	}
+	public void reset()
+	{
+		int diameter = 10;
+		int x=0,y=0;
+		int r = 100;
+		for(int i=0;i<n;i++)
+		{
+			if(degrees[i] >= maxDegree*4/5)	r = 50;
+			else if(degrees[i] >= maxDegree*3/5)	r = 100;
+			else	r = 150;
+			x = (int) (r * Math.cos(Math.toRadians(i*360/n)));
+			y = (int) (r * Math.sin(Math.toRadians(i*360/n)));	
+			x = x + centre.x;
+			y =  centre.y - y;
+			diameter = 10;
+			points[i] = new Point(x,y);
+		}
+	}
 	public void paint(Graphics g) 
 	{
 		Graphics2D g2d = (Graphics2D) g;
 		g2d.setColor(Color.WHITE);
 	        g2d.fillRect(0, 0, getWidth(), getHeight());
+	        for(int i=0;i<numIcons;i++)	g2d.drawImage(icons[i], 10+i*30, 10, null);
 		int diameter = 10;
 		int x=0,y=0;
 		int r = 100;
