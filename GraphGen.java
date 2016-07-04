@@ -10,12 +10,6 @@ class Point
 	public int y;
 	Point(int x,int y){ this.x = x;this.y = y;	}
 }
-class Edge
-{
-	public int s;
-	public int e;
-	Edge(int x,int y){	s = x;e = y;	}
-}
 public class GraphGen
 {
 	private static int numEdges;
@@ -23,7 +17,7 @@ public class GraphGen
 	public static void main(String args[])
 	{
 		int numNodes = 20;
-		int maxDegree = 12;	
+		int maxDegree = 12;
 		if(args.length >=2)
 		{
 			numNodes = Integer.parseInt(args[0]);	
@@ -34,6 +28,7 @@ public class GraphGen
 	}
 	private static void generate(int numNodes,int maxDegree)
 	{
+		int maxWeight = 10;
 		int degree[] = new int[numNodes];
 		int sum = 0;
 		for(int i=0;i<numNodes;i++)
@@ -47,7 +42,6 @@ public class GraphGen
 			sum++;
 			degree[rand(maxDegree)]++;
 		}
-		edges = new Edge[sum/2];
 		numEdges = sum/2;
 		int e = 0;
 		while(sum > 0)
@@ -58,10 +52,9 @@ public class GraphGen
 			if(degree[a]==0 || degree[b]==0) continue;
 			degree[a]--;
 			degree[b]--;
-			System.out.println(a+","+b);
+			int weight = 1 + (int) ((maxWeight-1) * Math.random());
+			System.out.println(a+","+b+","+weight);
 			sum -= 2;
-			edges[e] = new Edge(a,b);
-			e++;
 		}
 	}
 	private static int rand(int maxDegree)

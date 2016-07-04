@@ -21,8 +21,9 @@ class Edge
 	public int s;
 	public int e;
 	public int w;
-	Edge(int x,int y){	s = x;e = y;w=1;	}
-	Edge(int x,int y,int wt){	s = x;e = y;w=wt;	}
+	public boolean focus;
+	Edge(int x,int y){	s = x;e = y;w=1;focus = false;	}
+	Edge(int x,int y,int wt){	s = x;e = y;w=wt;focus = false;	}
 }
 public class GraphDrawMod extends JPanel
 {
@@ -37,9 +38,9 @@ public class GraphDrawMod extends JPanel
 	private static int height = 600;
 	private Point centre = new Point(400,300);
 	private Point offCentre = new Point(0,0);
-	private static int numIcons = 12;
-	private static BufferedImage icons[] = new BufferedImage[numIcons];
-	private boolean enablePan,enableDrag;
+	private static int numIcons = 13;
+	private static BufferedImage icons[]= new BufferedImage[numIcons];
+	private boolean enablePan,enableDrag,mstShown;
 	private int showHidden;
 	private int focused;
 	GraphDrawMod(int mD)
@@ -55,6 +56,7 @@ public class GraphDrawMod extends JPanel
 		enableDrag = true;
 		showHidden = 0;
 		focused = -1;
+		mstShown = false;
 		addMouseListener(new MouseAdapter() { 
 			public void mousePressed(MouseEvent me) { 
 				if(me.getX() <= numIcons*30 && me.getY() <= 30)
@@ -84,7 +86,12 @@ public class GraphDrawMod extends JPanel
 					else if(action == 11)	
 					{
 						for(int i=0;i<n*5;i++)	update();
-					}									
+					}	
+					else if(action == 12)
+					{	
+						if(mstShown){		hideMST();mstShown = false;		}
+						else{	showMST();mstShown = true;	}													
+					}
 					focused = -1;
 				}
 				int o = findOval(me.getX(),me.getY());
@@ -198,7 +205,7 @@ public class GraphDrawMod extends JPanel
 			double xC = (points[i].x - points[j].x);
 			double dist = Math.sqrt(xC*xC+yC*yC);
 			if(dist == 0)	continue;
-			double F = 2*Math.log10(dist/5);
+			double F = 2*Math.log10(dist/5)/ed.w;
 			fX[i] -= F*xC/dist;
 			fY[i] -= F*yC/dist;			
 			fX[j] += F*xC/dist;
@@ -210,6 +217,48 @@ public class GraphDrawMod extends JPanel
 			points[i].x += (con*fX[i]);
 			points[i].y += (con*fY[i]);	
 		}
+	}
+	public static void showMST()
+	{
+		int graph[][] = new int[n][n];
+		boolean mst[][] = new boolean[n][n];
+		for(int i=0;i<n;i++){		for(int j=0;j<n;j++){	graph[i][j] = 0;mst[i][j] = false;	}	}
+		for(Edge ed : edges){	graph[ed.s][ed.e] = ed.w;	graph[ed.e][ed.s] = ed.w;	}
+		int key[] = new int[n];
+		int parent[] = new int[n];
+		boolean mstSet[] = new boolean[n];
+		for(int i=0;i<n;i++){	key[i] = Integer.MAX_VALUE;	mstSet[i] = false;	}
+		key[0] = 0;
+		parent[0] = -1;
+		for(int i=0;i<n-1;i++)
+		{
+			int minKey = -1,minVal = Integer.MAX_VALUE;
+			for(int j=0;j<n;j++){	if(mstSet[j]==false && key[j] < minVal){	minKey = j;minVal = key[j];	}	}
+			int u = minKey;
+			if(u == -1)	break;
+			mstSet[u] = true;
+			for(int v=0;v<n;v++)
+			{
+				if(graph[u][v] != 0 && mstSet[v] == false && graph[u][v] < key[v])
+				{
+					key[v] = graph[u][v];
+					parent[v] = u;
+				}
+			}
+		}	
+		for(int i=1;i<n;i++)
+		{
+			mst[parent[i]][i] = true;
+			mst[i][parent[i]] = true;			
+		}
+		for(Edge ed : edges)
+		{
+			if(mst[ed.s][ed.e] == true)	ed.focus = true;
+		}			
+	}
+	public static void hideMST()
+	{
+		for(Edge ed : edges)	ed.focus = false;
 	}
 	public void paint(Graphics g) 
 	{
@@ -223,10 +272,11 @@ public class GraphDrawMod extends JPanel
 		for(Edge ed : edges)
 		{
 			g2d.setPaint(new Color(10,200,150));
-			g2d.setStroke(new BasicStroke(ed.w));
-			if(points[ed.s].focus || points[ed.e].focus)	g2d.setStroke(new BasicStroke(ed.w*2));
+			g2d.setStroke(new BasicStroke(1));
+			if(points[ed.s].focus || points[ed.e].focus)	g2d.setStroke(new BasicStroke(2));
 			if(points[ed.s].focus || points[ed.e].focus)			g2d.setPaint(new Color(255,0,0));
 			if(points[ed.s].visible == 1 || points[ed.e].visible == 1)			g2d.setPaint(new Color(220,210,240));
+			if(ed.focus){	g2d.setPaint(new Color(20,250,20)); 		g2d.setStroke(new BasicStroke(5));	}
 			int x1 = (int)((points[ed.s].x-centre.x)*scale) + (int)centre.x+(int)offCentre.x;
 			int y1 = (int)centre.y - (int)((centre.y-points[ed.s].y)*scale)+(int)offCentre.y;
 			int x2 = (int)((points[ed.e].x-centre.x)*scale) + (int)centre.x+(int)offCentre.x;
@@ -279,12 +329,12 @@ public class GraphDrawMod extends JPanel
 		f.add(panel);
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.setVisible(true);
-		for(int i=0;i<n*100;i++)
+		for(int i=0;i<n*250;i++)
 		{
 			update();
 			f.repaint();
 			try{
-			Thread.sleep(200/n);
+			Thread.sleep(50/n);
 			}catch(Exception e){}
 		}
 	}
