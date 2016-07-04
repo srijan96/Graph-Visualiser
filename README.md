@@ -9,7 +9,7 @@ GraphDraw.java  -
     
 GraphDrawMod.java   -   
     Modified Version of drawing class . Uses Force-Based graph drawing algorithm. 
-    Features are - Node repositioning , zooming(in,out,normal) , Panning , Resetting, Hiding/Showing Nodes , Step-by-step & block wise manual Force-based repositioning.
+    Features are - Node repositioning , zooming(in,out,normal) , Panning , Resetting, Hiding/Showing Nodes , Step-by-step & block wise manual Force-based repositioning and drawing Minimum Spanning tree.
   
 run.sh  -   
     A shell script to run both programs back-to-back
