@@ -38,11 +38,11 @@ public class GraphDrawMod extends JPanel
 	private static int height = 600;
 	private Point centre = new Point(400,300);
 	private Point offCentre = new Point(0,0);
-	private static int numIcons = 13;
+	private static int numIcons = 16;
 	private static BufferedImage icons[]= new BufferedImage[numIcons];
 	private boolean enablePan,enableDrag,mstShown;
 	private int showHidden;
-	private int focused;
+	private int focused,start,stop;
 	GraphDrawMod(int mD)
 	{
 		for(int i=0;i<numIcons;i++)
@@ -57,6 +57,8 @@ public class GraphDrawMod extends JPanel
 		showHidden = 0;
 		focused = -1;
 		mstShown = false;
+		start = -1;
+		stop = -1;
 		addMouseListener(new MouseAdapter() { 
 			public void mousePressed(MouseEvent me) { 
 				if(me.getX() <= numIcons*30 && me.getY() <= 30)
@@ -91,6 +93,18 @@ public class GraphDrawMod extends JPanel
 					{	
 						if(mstShown){		hideMST();mstShown = false;		}
 						else{	showMST();mstShown = true;	}													
+					}
+					else if(action == 13)
+					{	
+						if(focused != -1)	start = focused;													
+					}
+					else if(action == 14)
+					{	
+						if(focused != -1)	stop = focused;													
+					}
+					else if(action == 15)
+					{	
+						if(start != -1 && stop != -1)	findSPT(start,stop);													
 					}
 					focused = -1;
 				}
@@ -220,6 +234,7 @@ public class GraphDrawMod extends JPanel
 	}
 	public static void showMST()
 	{
+		hideMST();
 		int graph[][] = new int[n][n];
 		boolean mst[][] = new boolean[n][n];
 		for(int i=0;i<n;i++){		for(int j=0;j<n;j++){	graph[i][j] = 0;mst[i][j] = false;	}	}
@@ -259,6 +274,45 @@ public class GraphDrawMod extends JPanel
 	public static void hideMST()
 	{
 		for(Edge ed : edges)	ed.focus = false;
+	}
+	public static void showSPT(int parent[],int stop)	
+	{
+		if(parent[stop] == -1)	return;
+		showSPT(parent,parent[stop]);
+		for(Edge ed : edges)
+		{
+			if((ed.s == stop && ed.e == parent[stop]) || (ed.e == stop && ed.s == parent[stop]))	ed.focus = true;
+		}
+	}
+	public static void findSPT(int start,int stop)
+	{
+		hideMST();
+		int graph[][] = new int[n][n];
+		boolean spt[][] = new boolean[n][n];
+		for(int i=0;i<n;i++){		for(int j=0;j<n;j++){	graph[i][j] = 0;spt[i][j] = false;	}	}
+		for(Edge ed : edges){	graph[ed.s][ed.e] = ed.w;	graph[ed.e][ed.s] = ed.w;	}
+		int dist[] = new int[n];
+		int parent[] = new int[n];
+		boolean sptSet[] = new boolean[n];
+		for(int i=0;i<n;i++){	dist[i] = Integer.MAX_VALUE;	sptSet[i] = false;	parent[i] = -1;	}
+		dist[start] = 0;
+		for(int i=0;i<n-1;i++)
+		{
+			int minKey = -1,minVal = Integer.MAX_VALUE;
+			for(int j=0;j<n;j++){	if(sptSet[j]==false && dist[j] < minVal){	minKey = j;minVal = dist[j];	}	}
+			int u = minKey;
+			if(u == -1)	break;
+			sptSet[u] = true;
+			for(int v=0;v<n;v++)
+			{
+				if(graph[u][v] != 0 && sptSet[v] == false && dist[u] + graph[u][v] < dist[v])
+				{
+					dist[v] = dist[u] + graph[u][v];
+					parent[v] = u;
+				}
+			}
+		}	
+		showSPT(parent,stop);			
 	}
 	public void paint(Graphics g) 
 	{
